@@ -26,3 +26,6 @@ This script is written for and tested on linux. Feel free to adopt for mac or wi
  * Error messages regarding not deleting files.index and folders.index
  * Error messages relating to folders_array: Incorrect index
 
+## Prerequisite
+
+ * Passwordless SSH needs to be implemented between your PC and your reMarkable
