@@ -4,23 +4,25 @@ Sync script for the reMarkable paper tablet.
 
 This script will give you sync and backup functionality over USB. Great if you do not want to sync your rM to the cloud.
 
-_Ongoing work, contributions welcome._
+_contributions welcome_
 
 ## Usage
 
 This script is written for and tested on linux. Feel free to adopt for mac or win.
 
- 1. Save the script file to `~/bin`
- 2. Change the path variable (and other) in the file as needed.
- 3. Run with `./rM-sync.sh`
+ 1. Create a reMarkable folder somewhere in your documents folder
+ 2. Save the script file to the reMarkable folder
+ 3. Change the RMDIR variable (and other) in the file as needed.
+ 4. Run with `./rm-sync.sh`
  
 ### Options
 
- * `-u` upload: Uploads new files to the reMarkable from local folder _uploads_.
- * `-b` backup: Creates a backup of all user files on the reMarkable.
- * `-d` download: Not yet implemented...
+ * `u` upload: Uploads new files to the reMarkable (root folder) from local folder _Upload_. After successful upload the files will be deleted in the local folder.
+ * `b` backup: Creates a backup of all user files on the reMarkable. The backup is saved to a folder with todays date inside the _Backup_ folder.
+ * `d` download: Recreates the folderstructure on your reMarkable inside the _Files_ folder and downloads all files in PDF format.
 
-## Planned functionality
+## Open issues
 
- * Download PDFs of everything that changed on the tablet
+ * Error messages regarding not deleting files.index and folders.index
+ * Error messages relating to folders_array: Incorrect index
 
