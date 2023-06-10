@@ -26,7 +26,7 @@ This script is written for and tested on linux. Feel free to adopt for mac or wi
 
 ## Open issues
 
- * Error messages regarding not deleting files.index and folders.index
+ * No issues know as of today
 
 ## Prerequisite
 
