@@ -20,9 +20,9 @@ This script is written for and tested on linux. Feel free to adopt for mac or wi
  * `u` upload: Uploads new files to the reMarkable (root folder) from local folder _Upload_. After successful upload the files will be deleted in the local folder.
  * `b` backup: Creates a backup of all user files on the reMarkable. The backup is saved to a folder with todays date inside the _Backup_ folder.
  * `d` download: Recreates the folderstructure on your reMarkable inside the _Files_ folder and downloads all files in PDF format.
- * 'v' verbose: more detailed output and logging
+ * `v` verbose: more detailed output and logging
  
- default setting is 'bdu'
+ default setting is `bdu`
 
 ## Open issues
 
