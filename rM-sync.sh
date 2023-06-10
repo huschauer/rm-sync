@@ -16,10 +16,11 @@ SSHPORT="22"
 
 # Local configuration
 MAINDIR="$HOME/Nextcloud/Documents/reMarkable"
-BACKUPDIR="$MAINDIR/Backup/"             # backups by date of all rM contents
-UPLOADDIR="$MAINDIR/Upload/"             # all files here will be sent to rM
-OUTPUTDIR="$MAINDIR/Files/"              # PDFs of everything on the rM in correct folder structure
-LOG="sync.log"                           # Log file name in $MAINDIR
+BACKUPDIR="$MAINDIR/Backup/"							# backups by date of all rM contents
+UPLOADDIR="$MAINDIR/Upload/"							# all files here will be sent to rM
+OUTPUTDIR="$MAINDIR/Files/"								# PDFs of everything on the rM in correct folder structure
+OUTPUTDIRBAK="$MAINDIR/Files.bak/"				# Backup of PDFs folder
+LOG="sync.log"              							# Log file name in $MAINDIR
 BACKUPLIST="files.json"
 LOG="$MAINDIR/$(date +%y%m%d)-$LOG"
 
@@ -45,12 +46,13 @@ if [[ $ARG == "help" ]]; then
 	echo "v -> very detailed output and logging"
 	echo "if no option is provided, 'bdu' will be applied as default"
 	echo
-	echo "for down- and uplaods, you might need to go to Settings -> Storage"
-	ecoh "on your reMarkable and turn USB web interface on"
+	echo "Attention:"
+	echo "For down- and uplaods, you need to go to Settings -> Storage"
+	echo "and turn USB web interface on!"
 	exit 0
 fi
-if [[ -z $ARG ]]; then
-	ARG="bdu"
+if [[ -z $ARG || $ARG == "v" ]]; then
+	ARG="bdu$ARG"
 fi
 
 # Create array for folders
@@ -134,10 +136,14 @@ if [ $? == "0" ]; then
 	if [[ $ARG == *"d"* ]]; then
 		# Download files
 		echo "BEGIN DOWNLOAD" | tee -a $LOG
-		# remove existing content in download folder and create download folder if not existing
-		echo "removing existing data in $OUTPUTDIR" | tee -a $LOG 
+		# copy existing content in download folder to backup folder
+		# and create new download folder
+		if [[ -e $OUTPUTDIR ]]; then
+			echo "copying existing data from folder $OUTPUTDIR to $OUTPUTDIRBAK" | tee -a $LOG
+			mv "$OUTPUTDIR" "$OUTPUTDIRBAK"
+		fi
+		echo "creating new folder $OUTPUTDIR" | tee -a $LOG 
 		mkdir -p "$OUTPUTDIR"
-		find "$OUTPUTDIR" -mindepth 1 -delete
 		# create index of all IDs
 		ls -1 "$BACKUPDIR$TODAY" | sed -e 's/\..*//g' | awk '!a[$0]++' > "$OUTPUTDIR/index"
 		# create an index.json file from all the .metadata files
@@ -158,8 +164,6 @@ if [ $? == "0" ]; then
 		# Now create folder structure for downloading files
 		# Read the folder structure from "type": "CollectionType" and save in file folders.index
 		cd "$OUTPUTDIR"
-		rm files.index
-		rm folders.index
 		# create Trash folder
 		mkdir -p "Trash"
 		echo "trash Trash 0" > folders.index      # create folders.index with trash as first entry
@@ -227,7 +231,7 @@ if [ $? == "0" ]; then
 			if [[ $ARG == *"v"* ]]; then
 				echo "$folder/$filename" | tee -a $LOG
 		  	echo "curl -s -O -J \"http://$RMIP/download/$id/placeholder\"" >> $LOG 
-				curl -# -O -J "http://$RMIP/download/$id/placeholder"			# -# -> progress bar
+				curl -# -O -J "http://$RMIP/download/$id/placeholder"			# -> progress bar
 			else
 				echo -n "."
 				curl -s -O -J "http://$RMIP/download/$id/placeholder"			# -s -> silent mode
@@ -278,7 +282,13 @@ echo "Time: $(date)" | tee -a $LOG
 if typeset -f notification > /dev/null; then
   if [ $ERROR ]; then
     notification "ERROR in rM Sync!" "$ERRORREASON"
+    echo "ERROR in rm Sync!"
   else
     notification "rM Sync successfull" "!"
+    echo "rm Sync successfull!"
   fi
 fi
+
+# Feedback
+echo "You might need to restart your reMarkable."
+read -p "End of Script. <ENTER>" input
