@@ -26,7 +26,7 @@ This script is written for and tested on linux. Feel free to adopt for mac or wi
 
 ## Open issues
 
- * No issues know as of today
+ * I get errors in the download function, when a folder name contains a blank. Either try to avoid that or help us improve the code, please
 
 ## Prerequisite
 
