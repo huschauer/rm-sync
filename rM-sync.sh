@@ -89,6 +89,7 @@ remove_quotes_and_comma() {
 	local output="$1"
 	output="${output%,}"		# remove trailing comma
 	output="${output#\"}"		# remove beginning double quotes
+  output=${output// /_}		# new: remove white space characters
 	echo "${output%\"}"			# Remove the trailing double quotes
 }
 
@@ -139,8 +140,11 @@ if [ $? == "0" ]; then
 		# copy existing content in download folder to backup folder
 		# and create new download folder
 		if [[ -e $OUTPUTDIR ]]; then
-			echo "copying existing data from folder $OUTPUTDIR to $OUTPUTDIRBAK" | tee -a $LOG
-			mv "$OUTPUTDIR" "$OUTPUTDIRBAK"
+			echo "copying existing data from folder:" | tee -a $LOG
+			echo "$OUTPUTDIR" | tee -a $LOG
+			echo "to" | tee -a $LOG
+			echo "$OUTPUTDIRBAK" | tee -a $LOG
+			mv "$OUTPUTDIR" "$OUTPUTDIRBAK" | tee -a $LOG
 		fi
 		echo "creating new folder $OUTPUTDIR" | tee -a $LOG 
 		mkdir -p "$OUTPUTDIR"
@@ -225,6 +229,7 @@ if [ $? == "0" ]; then
 			id=$(echo "$line" | awk '{print $1}')
 			folderID=$(echo "$line" | awk '{print $3}')
 			filename=$(echo "$line" | awk '{print $2}')
+			# echo "$folderID"
 			folder=${folders_array["$folderID"]}
 			mkdir -p "$OUTPUTDIR/$folder"
 			cd "$OUTPUTDIR/$folder"
