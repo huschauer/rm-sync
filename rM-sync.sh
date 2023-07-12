@@ -8,6 +8,8 @@
 # Licence: MIT
 # Revised by: Horst Huschauer
 
+# Last change in lines: 149+150
+
 # Remote configuration
 RMDIR="/home/root/.local/share/remarkable/xochitl/"
 RMUSER="root"
@@ -36,7 +38,7 @@ ARG="$1"
 if [[ $ARG == "help" ]]; then
 	echo "This is the sync script for reMarkable"
 	echo "Usage:"
-	echo "rm-sync [options]"
+	echo "rm-sync.sh [options]"
 	echo "options are"
 	echo "help shows this text"
 	echo "combine any other options (single letters as below) in one 'word'"
@@ -55,8 +57,9 @@ if [[ -z $ARG || $ARG == "v" ]]; then
 	ARG="bdu$ARG"
 fi
 
-# Create array for folders
-declare -A folders_array
+# Create arrays for folders
+declare -A folders_array1	# without full path info
+declare -A folders_array2	# with full path info
 
 ###################
 # Functions:
@@ -70,9 +73,9 @@ notification() {
 # Recursive function to build the full path for each folder
 build_full_path() {
     local current_id=$1
-    local folder_info=${folders_array["$current_id"]}
-    local folder_name=${folder_info% *}
-    local parent_id=${folder_info#* }
+    local folder_info=${folders_array1["$current_id"]}
+    local folder_name=${folder_info%/*}
+    local parent_id=${folder_info#*/}
 
     if [ "$parent_id" != "0" ]; then
         # Recursively call the function to build the full path
@@ -89,8 +92,8 @@ remove_quotes_and_comma() {
 	local output="$1"
 	output="${output%,}"		# remove trailing comma
 	output="${output#\"}"		# remove beginning double quotes
-  output=${output// /_}		# new: remove white space characters
-	echo "${output%\"}"			# Remove the trailing double quotes
+	output=${output// /_}		# new: remove white space characters
+	echo "${output%\"}"		# Remove the trailing double quotes
 }
 
 # ================
@@ -140,17 +143,26 @@ if [ $? == "0" ]; then
 		# copy existing content in download folder to backup folder
 		# and create new download folder
 		if [[ -e $OUTPUTDIR ]]; then
-			echo "copying existing data from folder:" | tee -a $LOG
+			echo "Saving existing folder:" | tee -a $LOG
 			echo "$OUTPUTDIR" | tee -a $LOG
-			echo "to" | tee -a $LOG
+			echo "in new location:" | tee -a $LOG
 			echo "$OUTPUTDIRBAK" | tee -a $LOG
-			mv "$OUTPUTDIR" "$OUTPUTDIRBAK" | tee -a $LOG
+			# alt: rm -d "$OUTPUTDIRBAK" | tee -a $LOG
+			rm -r "${OUTPUTDIRBAK%/}" | tee -a $LOG		# remove folder completely
+			# alt: mv -f "$OUTPUTDIR" "$OUTPUTDIRBAK" | tee -a $LOG
+			mv -f "$OUTPUTDIR" "${OUTPUTDIRBAK%/}" | tee -a $LOG
 		fi
-		echo "creating new folder $OUTPUTDIR" | tee -a $LOG 
+		if [[ $ARG == *"v"* ]]; then
+			echo "creating new folder $OUTPUTDIR" | tee -a $LOG
+		fi
 		mkdir -p "$OUTPUTDIR"
-		# create index of all IDs
+		if [[ $ARG == *"v"* ]]; then
+			echo "Creating index file of all IDs" | tee -a $LOG
+		fi
 		ls -1 "$BACKUPDIR$TODAY" | sed -e 's/\..*//g' | awk '!a[$0]++' > "$OUTPUTDIR/index"
-		# create an index.json file from all the .metadata files
+		if [[ $ARG == *"v"* ]]; then
+			echo "Creating an index.json file from all the .metadata files" | tee -a $LOG
+		fi
 		echo "[" > "$OUTPUTDIR/index.json";
 		for file in "$BACKUPDIR$TODAY"/*.metadata;
 		do
@@ -168,54 +180,78 @@ if [ $? == "0" ]; then
 		# Now create folder structure for downloading files
 		# Read the folder structure from "type": "CollectionType" and save in file folders.index
 		cd "$OUTPUTDIR"
-		# create Trash folder
+		if [[ $ARG == *"v"* ]]; then
+			echo "Creating Trash folder" | tee -a $LOG
+		fi
 		mkdir -p "Trash"
 		echo "trash Trash 0" > folders.index      # create folders.index with trash as first entry
+		if [[ $ARG == *"v"* ]]; then
+			echo "Creating other folders" | tee -a $LOG
+		fi
 		while read -r line
 		do
 			# line = iteration of IDs
-			# echo "Reading ID $line"
+			if [[ $ARG == *"v"* ]]; then
+				echo "Reading ID $line" | tee -a $LOG
+			fi
 			metadataFile="$BACKUPDIR$TODAY/$line.metadata"
-		  idType=$(remove_quotes_and_comma $(grep "\"type\": " "$metadataFile" | awk '{print $2}') )
-		  visName=$(remove_quotes_and_comma $(grep "\"visibleName\": " "$metadataFile" | awk '{print $2}') )
-		  parent=$(remove_quotes_and_comma $(grep "\"parent\": " "$metadataFile" | awk '{print $2}') )
-		  # echo "type: $idType, visibleName: $visName, parent: $parent."
+			idType=$(remove_quotes_and_comma $(grep "\"type\": " "$metadataFile" | awk '{print $2}') )
+			visName=$(remove_quotes_and_comma $(grep "\"visibleName\": " "$metadataFile" | awk '{print $2}') )
+			parent=$(remove_quotes_and_comma $(grep "\"parent\": " "$metadataFile" | awk '{print $2}') )
+			if [[ $ARG == *"v"* ]]; then
+				echo "type: $idType, visibleName: $visName, parent: $parent." | tee -a $LOG
+			fi
 		  if [ "$idType" == "CollectionType" ]; then
-		 	  # this line is a folder
-		 	  if [ -z "$parent" ]; then
-		 	  	parent="0"
-		 	  fi
-		 	  msg_out="\"$visName\" is a subfolder of $parent"
+		 	# this line is a folder
+		 	if [ -z "$parent" ]; then
+		 		parent="0"
+		 	fi
+		 	msg_out="\"$visName\" is a subfolder of $parent"
 	 	  	echo "$line $visName $parent" >> folders.index
 		 	else
 		 		# this line is a file
 				msg_out="\"$visName\" is a file in folder $parent"
 				echo "$line $visName $parent" >> files.index
 			fi
-	 	  if [[ $ARG == *"v"* ]]; then
-	 	  	echo "$msg_out" | tee -a $LOG
-	 	  else
-	 	  	echo -n "."				# echo w/o newline
+	 		if [[ $ARG == *"v"* ]]; then
+	 			echo "$msg_out" | tee -a $LOG
+	 		else
+	 			echo -n "."				# echo w/o newline
 			fi
 		done < "$OUTPUTDIR/index"
-		echo
+		if [[ $ARG == *"v"* ]]; then
+			echo "All Folders listed in folders.index" | tee -a $LOG
+		fi
 		# folders.index now has all the folders information
-		# let's get it sorted
 		# Read lines from folders.index file
+		if [[ $ARG == *"v"* ]]; then
+			echo "Reading all folders from folders.index into folders_array" | tee -a $LOG
+		fi
 		while IFS=' ' read -r id folder parent_id; do
-		  folders_array["$id"]="$folder $parent_id"
+		  folders_array1["$id"]="$folder/$parent_id"
 		done < folders.index
 
 		# Construct the associative array with full paths
-		for key in "${!folders_array[@]}"; do
-		  folders_array["$key"]=$(build_full_path "$key")
+		if [[ $ARG == *"v"* ]]; then
+			echo "Creating full path information" | tee -a $LOG
+		fi
+		for key in "${!folders_array1[@]}"; do
+			if [[ $ARG == *"v"* ]]; then
+				echo "Folder: $key, Old Value: ${folders_array1[$key]}" | tee -a $LOG
+			fi
+			folders_array2["$key"]=$(build_full_path "$key")
+			if [[ $ARG == *"v"* ]]; then
+				echo "Folder: $key, New Value: ${folders_array2[$key]}" | tee -a $LOG
+			fi
 		done
 
-		# Print the associative array. This is a test only
+		# In verbose mode: print the associative array:
 		if [[ $ARG == *"v"* ]]; then
-			for key in "${!folders_array[@]}"; do
-				echo "ID: $key, Full Path: ${folders_array[$key]}" | tee -a $LOG
+			echo "Listing the folders_array" | tee -a $LOG
+			for key in "${!folders_array2[@]}"; do
+				echo "ID: $key, Full Path: ${folders_array2[$key]}" | tee -a $LOG
 			done
+			echo "--- End of list ---" | tee -a $LOG
 		fi
 		
 		# Now we have an array of all folders
@@ -230,7 +266,7 @@ if [ $? == "0" ]; then
 			folderID=$(echo "$line" | awk '{print $3}')
 			filename=$(echo "$line" | awk '{print $2}')
 			# echo "$folderID"
-			folder=${folders_array["$folderID"]}
+			folder=${folders_array2["$folderID"]}
 			mkdir -p "$OUTPUTDIR/$folder"
 			cd "$OUTPUTDIR/$folder"
 			if [[ $ARG == *"v"* ]]; then
