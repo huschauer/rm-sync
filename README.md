@@ -1,4 +1,4 @@
-# rM sync
+# rm-sync
 
 Sync script for the reMarkable paper tablet.
 
@@ -13,7 +13,7 @@ This script is written for and tested on linux. Feel free to adopt for mac or wi
  1. Create a reMarkable folder somewhere in your documents folder
  2. Save the script file to the reMarkable folder
  3. Change the RMDIR variable (and others) in the file as needed.
- 4. Run with `./rm-sync.sh`
+ 4. Run with `./rm-sync.sh [options]`
  
 ### Options
 
@@ -26,7 +26,7 @@ This script is written for and tested on linux. Feel free to adopt for mac or wi
 
 ## Open issues
 
- * I get errors in the download function, when a folder name contains a blank. Either try to avoid that or help us improve the code, please
+ * No issues know as of today
 
 ## Prerequisite
 
