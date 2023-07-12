@@ -8,8 +8,6 @@
 # Licence: MIT
 # Revised by: Horst Huschauer
 
-# Last change in lines: 149+150
-
 # Remote configuration
 RMDIR="/home/root/.local/share/remarkable/xochitl/"
 RMUSER="root"
